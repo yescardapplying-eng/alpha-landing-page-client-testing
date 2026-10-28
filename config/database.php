@@ -94,3 +94,32 @@ function getDBConnection() {
         throw new Exception("Database connection failed: " . $e->getMessage());
     }
 }
+
+/**
+ * ============================================================================
+ * TABLE NAME RESOLUTION HELPERS (DYNAMIC / CONFIGURABLE)
+ * Allows separating tables per client or environment (e.g. test_leads)
+ * ============================================================================
+ */
+function getTableName($type = 'leads') {
+    loadEnv();
+    switch ($type) {
+        case 'interactions':
+        case 'assessment_interactions':
+            $t = getenv('DB_TABLE_INTERACTIONS') ?: 'test_assessment_interactions';
+            break;
+        case 'leads':
+        default:
+            $t = getenv('DB_TABLE_LEADS') ?: 'test_leads';
+            break;
+    }
+    // Sanitize identifier for SQL safety
+    return preg_replace('/[^a-zA-Z0-9_]/', '', $t);
+}
+
+if (!defined('TABLE_LEADS')) {
+    define('TABLE_LEADS', getTableName('leads'));
+}
+if (!defined('TABLE_INTERACTIONS')) {
+    define('TABLE_INTERACTIONS', getTableName('interactions'));
+}

@@ -55,9 +55,11 @@ try {
     $fbclid = cleanString($body['fbclid'] ?? '');
 
     $pdo = getDBConnection();
+    $leadsTable = TABLE_LEADS;
+    $interactionsTable = TABLE_INTERACTIONS;
 
     // 1. Check if session exists in `leads`
-    $stmt = $pdo->prepare("SELECT id, session_id, lead_reference, current_step, status FROM leads WHERE session_id = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id, session_id, lead_reference, current_step, status FROM `{$leadsTable}` WHERE session_id = ? LIMIT 1");
     $stmt->execute([$sessionId]);
     $existing = $stmt->fetch();
 
@@ -72,7 +74,7 @@ try {
         $fieldCol = in_array($field, $allowedFields, true) ? $field : 'challenge';
 
         $insertSql = "
-            INSERT INTO leads (
+            INSERT INTO `{$leadsTable}` (
                 session_id, lead_reference, status, current_step,
                 `{$fieldCol}`,
                 utm_source, utm_medium, utm_campaign, utm_content, utm_term, fbclid,
@@ -106,7 +108,7 @@ try {
 
         if (in_array($field, $allowedFields, true)) {
             $updateSql = "
-                UPDATE leads SET
+                UPDATE `{$leadsTable}` SET
                     `{$field}` = :field_val,
                     current_step = GREATEST(current_step, :step_num),
                     updated_at = NOW()
@@ -123,7 +125,7 @@ try {
 
     // 2. Insert into `assessment_interactions` to log the exact click with Question and Answer
     $interactionSql = "
-        INSERT INTO assessment_interactions (
+        INSERT INTO `{$interactionsTable}` (
             session_id, step_number, question, selected_answer, field_name,
             action_type, ip_address, user_agent, created_at
         ) VALUES (

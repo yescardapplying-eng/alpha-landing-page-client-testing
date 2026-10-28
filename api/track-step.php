@@ -51,9 +51,11 @@ try {
     $fbclid = cleanString($body['fbclid'] ?? '');
 
     $pdo = getDBConnection();
+    $leadsTable = TABLE_LEADS;
+    $interactionsTable = TABLE_INTERACTIONS;
 
     // Check if session record already exists
-    $stmt = $pdo->prepare("SELECT id, session_id, lead_reference, current_step, status FROM leads WHERE session_id = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id, session_id, lead_reference, current_step, status FROM `{$leadsTable}` WHERE session_id = ? LIMIT 1");
     $stmt->execute([$sessionId]);
     $existing = $stmt->fetch();
 
@@ -72,7 +74,7 @@ try {
         $stateVal = $sanitized['state'] ?? null;
 
         $insertSql = "
-            INSERT INTO leads (
+            INSERT INTO `{$leadsTable}` (
                 session_id, lead_reference, status, current_step,
                 challenge, full_name, mobile_number, trading_segment, trading_capital,
                 whatsapp_number, state,
@@ -152,7 +154,7 @@ try {
 
         $setSql = implode(', ', $setClauses);
         $updateSql = "
-            UPDATE leads SET
+            UPDATE `{$leadsTable}` SET
                 {$setSql},
                 current_step = GREATEST(current_step, :step_num),
                 updated_at = NOW()
@@ -169,7 +171,7 @@ try {
     $answerSummary = json_encode($sanitized, JSON_UNESCAPED_UNICODE);
 
     $intSql = "
-        INSERT INTO assessment_interactions (
+        INSERT INTO `{$interactionsTable}` (
             session_id, step_number, question, selected_answer, field_name,
             action_type, ip_address, user_agent, created_at
         ) VALUES (

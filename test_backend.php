@@ -87,25 +87,28 @@ $clickPayload = [
 ];
 
 // Execute via test harness function using track-click.php logic
-$stmt = $pdo->prepare("SELECT id FROM leads WHERE session_id = ?");
+$leadsTable = TABLE_LEADS;
+$interactionsTable = TABLE_INTERACTIONS;
+
+$stmt = $pdo->prepare("SELECT id FROM `{$leadsTable}` WHERE session_id = ?");
 $stmt->execute([$testSession]);
 if (!$stmt->fetch()) {
     $leadRef = "SM-LEAD-" . strtoupper(bin2hex(random_bytes(4)));
     $ins = $pdo->prepare("
-        INSERT INTO leads (session_id, lead_reference, status, current_step, challenge, created_at, updated_at)
+        INSERT INTO `{$leadsTable}` (session_id, lead_reference, status, current_step, challenge, created_at, updated_at)
         VALUES (?, ?, 'partial', 1, ?, NOW(), NOW())
     ");
     $ins->execute([$testSession, $leadRef, 'Frequent stop-loss hits']);
 }
 
 $insLog = $pdo->prepare("
-    INSERT INTO assessment_interactions (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
+    INSERT INTO `{$interactionsTable}` (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
     VALUES (?, 1, ?, ?, 'challenge', 'option_click', '127.0.0.1', 'PHPTest/1.0', NOW())
 ");
 $insLog->execute([$testSession, "What’s your biggest challenge right now?", "Frequent stop-loss hits"]);
 
 // Verify click logged in DB
-$check = $pdo->prepare("SELECT * FROM assessment_interactions WHERE session_id = ? AND step_number = 1 AND action_type = 'option_click'");
+$check = $pdo->prepare("SELECT * FROM `{$interactionsTable}` WHERE session_id = ? AND step_number = 1 AND action_type = 'option_click'");
 $check->execute([$testSession]);
 $interaction = $check->fetch();
 if ($interaction && $interaction['selected_answer'] === 'Frequent stop-loss hits') {
@@ -118,24 +121,24 @@ if ($interaction && $interaction['selected_answer'] === 'Frequent stop-loss hits
 // TEST 3: Continue Step 1 (Continue button clicked)
 echo "[TEST 3] Testing Continue Click (Step 1: Save Step & Advance)...\n";
 $insContinue = $pdo->prepare("
-    INSERT INTO assessment_interactions (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
+    INSERT INTO `{$interactionsTable}` (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
     VALUES (?, 1, 'What’s your biggest challenge right now?', ?, 'step_data', 'continue_click', '127.0.0.1', 'PHPTest/1.0', NOW())
 ");
 $insContinue->execute([$testSession, json_encode(['challenge' => 'Frequent stop-loss hits'])]);
 
-$upStep = $pdo->prepare("UPDATE leads SET current_step = 2, updated_at = NOW() WHERE session_id = ?");
+$upStep = $pdo->prepare("UPDATE `{$leadsTable}` SET current_step = 2, updated_at = NOW() WHERE session_id = ?");
 $upStep->execute([$testSession]);
 echo "  -> SUCCESS! Step 1 saved and advanced to Step 2.\n\n";
 
 // TEST 4: Continue Step 2 (Name & Mobile)
 echo "[TEST 4] Testing Step 2 (Name & Mobile Number)...\n";
 $upLead2 = $pdo->prepare("
-    UPDATE leads SET full_name = ?, mobile_number = ?, current_step = 3, updated_at = NOW() WHERE session_id = ?
+    UPDATE `{$leadsTable}` SET full_name = ?, mobile_number = ?, current_step = 3, updated_at = NOW() WHERE session_id = ?
 ");
 $upLead2->execute(['Arjun Verma', '9876543210', $testSession]);
 
 $insStep2 = $pdo->prepare("
-    INSERT INTO assessment_interactions (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
+    INSERT INTO `{$interactionsTable}` (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
     VALUES (?, 2, 'Your Contact Details', ?, 'step_data', 'continue_click', '127.0.0.1', 'PHPTest/1.0', NOW())
 ");
 $insStep2->execute([$testSession, json_encode(['full_name' => 'Arjun Verma', 'mobile_number' => '9876543210'])]);
@@ -144,13 +147,13 @@ echo "  -> SUCCESS! Step 2 saved: Name = Arjun Verma, Mobile = 9876543210.\n\n";
 // TEST 5: Step 3 Option Click & Continue (Options Trading)
 echo "[TEST 5] Testing Step 3 (Option Click: 'Options')...\n";
 $insStep3Click = $pdo->prepare("
-    INSERT INTO assessment_interactions (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
+    INSERT INTO `{$interactionsTable}` (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
     VALUES (?, 3, 'Which segment do you trade in?', 'Options', 'trading_segment', 'option_click', '127.0.0.1', 'PHPTest/1.0', NOW())
 ");
 $insStep3Click->execute([$testSession]);
 
 $upLead3 = $pdo->prepare("
-    UPDATE leads SET trading_segment = 'Options', current_step = 4, updated_at = NOW() WHERE session_id = ?
+    UPDATE `{$leadsTable}` SET trading_segment = 'Options', current_step = 4, updated_at = NOW() WHERE session_id = ?
 ");
 $upLead3->execute([$testSession]);
 echo "  -> SUCCESS! Step 3 option click & continue saved.\n\n";
@@ -158,13 +161,13 @@ echo "  -> SUCCESS! Step 3 option click & continue saved.\n\n";
 // TEST 6: Step 4 Option Click & Continue (1 Lakh-2 Lakh)
 echo "[TEST 6] Testing Step 4 (Option Click: '1 Lakh–2 Lakh')...\n";
 $insStep4Click = $pdo->prepare("
-    INSERT INTO assessment_interactions (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
+    INSERT INTO `{$interactionsTable}` (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
     VALUES (?, 4, 'Trading capital?', '1 Lakh–2 Lakh', 'trading_capital', 'option_click', '127.0.0.1', 'PHPTest/1.0', NOW())
 ");
 $insStep4Click->execute([$testSession]);
 
 $upLead4 = $pdo->prepare("
-    UPDATE leads SET trading_capital = '1 Lakh–2 Lakh', current_step = 5, updated_at = NOW() WHERE session_id = ?
+    UPDATE `{$leadsTable}` SET trading_capital = '1 Lakh–2 Lakh', current_step = 5, updated_at = NOW() WHERE session_id = ?
 ");
 $upLead4->execute([$testSession]);
 echo "  -> SUCCESS! Step 4 option click & continue saved.\n\n";
@@ -172,7 +175,7 @@ echo "  -> SUCCESS! Step 4 option click & continue saved.\n\n";
 // TEST 7: Step 5 Final Submit (WhatsApp & State)
 echo "[TEST 7] Testing Step 5 Final Submit (WhatsApp: 9876543210, State: Maharashtra)...\n";
 $upSubmit = $pdo->prepare("
-    UPDATE leads SET
+    UPDATE `{$leadsTable}` SET
         whatsapp_number = '9876543210',
         state = 'Maharashtra',
         status = 'completed',
@@ -183,7 +186,7 @@ $upSubmit = $pdo->prepare("
 $upSubmit->execute([$testSession]);
 
 $insSubmit = $pdo->prepare("
-    INSERT INTO assessment_interactions (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
+    INSERT INTO `{$interactionsTable}` (session_id, step_number, question, selected_answer, field_name, action_type, ip_address, user_agent, created_at)
     VALUES (?, 5, 'Final Details (WhatsApp & State)', ?, 'final_details', 'submit_click', '127.0.0.1', 'PHPTest/1.0', NOW())
 ");
 $insSubmit->execute([$testSession, json_encode(['whatsapp_number' => '9876543210', 'state' => 'Maharashtra'])]);
@@ -191,7 +194,7 @@ echo "  -> SUCCESS! Lead finalized and marked status = 'completed'.\n\n";
 
 // TEST 8: Full Audit Trail Verification
 echo "[TEST 8] Verifying Full Database Record & Audit Trail...\n";
-$leadStmt = $pdo->prepare("SELECT * FROM leads WHERE session_id = ?");
+$leadStmt = $pdo->prepare("SELECT * FROM `{$leadsTable}` WHERE session_id = ?");
 $leadStmt->execute([$testSession]);
 $finalLead = $leadStmt->fetch();
 
@@ -208,7 +211,7 @@ echo "State            : " . $finalLead['state'] . "\n";
 echo "Created At       : " . $finalLead['created_at'] . "\n";
 echo "Completed At     : " . $finalLead['completed_at'] . "\n\n";
 
-$logsStmt = $pdo->prepare("SELECT * FROM assessment_interactions WHERE session_id = ? ORDER BY id ASC");
+$logsStmt = $pdo->prepare("SELECT * FROM `{$interactionsTable}` WHERE session_id = ? ORDER BY id ASC");
 $logsStmt->execute([$testSession]);
 $logs = $logsStmt->fetchAll();
 

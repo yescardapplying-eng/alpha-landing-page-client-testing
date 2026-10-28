@@ -38,13 +38,16 @@ try {
     echo "\nAll tables created/verified successfully!\n";
 
     // Verify tables
-    $stmt = $pdo->query("SHOW TABLES LIKE 'leads'");
-    $leadsTable = $stmt->fetch();
-    echo "Table 'leads' exists: " . ($leadsTable ? "YES" : "NO") . "\n";
+    $leadsTable = TABLE_LEADS;
+    $interactionsTable = TABLE_INTERACTIONS;
 
-    $stmt = $pdo->query("SHOW TABLES LIKE 'assessment_interactions'");
-    $interactionsTable = $stmt->fetch();
-    echo "Table 'assessment_interactions' exists: " . ($interactionsTable ? "YES" : "NO") . "\n";
+    $stmt = $pdo->query("SHOW TABLES LIKE '{$leadsTable}'");
+    $leadsFound = $stmt->fetch();
+    echo "Table '{$leadsTable}' exists: " . ($leadsFound ? "YES" : "NO") . "\n";
+
+    $stmt = $pdo->query("SHOW TABLES LIKE '{$interactionsTable}'");
+    $interactionsFound = $stmt->fetch();
+    echo "Table '{$interactionsTable}' exists: " . ($interactionsFound ? "YES" : "NO") . "\n";
 
 } catch (Exception $e) {
     echo "MIGRATION ERROR: " . $e->getMessage() . "\n";

@@ -25,7 +25,10 @@ try {
     $pdo = getDBConnection();
 
     // Fetch lead details
-    $stmt = $pdo->prepare("SELECT * FROM leads WHERE session_id = ? LIMIT 1");
+    $leadsTable = TABLE_LEADS;
+    $interactionsTable = TABLE_INTERACTIONS;
+
+    $stmt = $pdo->prepare("SELECT * FROM `{$leadsTable}` WHERE session_id = ? LIMIT 1");
     $stmt->execute([$sessionId]);
     $lead = $stmt->fetch();
 
@@ -36,7 +39,7 @@ try {
     // Fetch all interaction click history
     $intStmt = $pdo->prepare("
         SELECT id, step_number, question, selected_answer, field_name, action_type, created_at
-        FROM assessment_interactions
+        FROM `{$interactionsTable}`
         WHERE session_id = ?
         ORDER BY id ASC
     ");

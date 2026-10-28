@@ -43,8 +43,11 @@ try {
 
     $pdo = getDBConnection();
 
+    $leadsTable = TABLE_LEADS;
+    $interactionsTable = TABLE_INTERACTIONS;
+
     // Fetch existing lead
-    $stmt = $pdo->prepare("SELECT * FROM leads WHERE session_id = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT * FROM `{$leadsTable}` WHERE session_id = ? LIMIT 1");
     $stmt->execute([$sessionId]);
     $lead = $stmt->fetch();
 
@@ -55,7 +58,7 @@ try {
 
         // Fallback insert if user directly reached submit
         $insertSql = "
-            INSERT INTO leads (
+            INSERT INTO `{$leadsTable}` (
                 session_id, lead_reference, status, current_step,
                 whatsapp_number, state,
                 ip_address, user_agent, created_at, updated_at, completed_at
@@ -78,7 +81,7 @@ try {
         $leadRef = $lead['lead_reference'];
 
         $updateSql = "
-            UPDATE leads SET
+            UPDATE `{$leadsTable}` SET
                 whatsapp_number = :whatsapp_number,
                 state = :state,
                 status = 'completed',
@@ -97,7 +100,7 @@ try {
 
     // Log the Submit click in assessment_interactions
     $intSql = "
-        INSERT INTO assessment_interactions (
+        INSERT INTO `{$interactionsTable}` (
             session_id, step_number, question, selected_answer, field_name,
             action_type, ip_address, user_agent, created_at
         ) VALUES (
@@ -114,7 +117,7 @@ try {
     ]);
 
     // Retrieve full final lead record for client confirmation
-    $fetchStmt = $pdo->prepare("SELECT * FROM leads WHERE session_id = ? LIMIT 1");
+    $fetchStmt = $pdo->prepare("SELECT * FROM `{$leadsTable}` WHERE session_id = ? LIMIT 1");
     $fetchStmt->execute([$sessionId]);
     $finalLead = $fetchStmt->fetch();
 
